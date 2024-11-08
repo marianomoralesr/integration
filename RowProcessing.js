@@ -61,37 +61,48 @@
     // Procesar fotos exterior
     let fotosExteriorIds = [];
     if (rowData.fotos_exterior_ids) {
-      // Si ya tenemos los IDs de las fotos exterior, los usamos
-      fotosExteriorIds = rowData.fotos_exterior_ids.split(',').map(id => id.trim());
-      Logger.log(`preparePostData: Usando fotos_exterior_ids existentes: ${fotosExteriorIds}`);
+    if (typeof rowData.fotos_exterior_ids === 'string') {
+        fotosExteriorIds = rowData.fotos_exterior_ids.split(',').map(id => id.trim());
+    } else if (typeof rowData.fotos_exterior_ids === 'number') {
+        fotosExteriorIds = [String(rowData.fotos_exterior_ids)];
     } else {
-      fotosExteriorIds = fotosExteriorArray.map(url => {
+        Logger.log(`preparePostData: fotos_exterior_ids tiene un tipo inesperado: ${typeof rowData.fotos_exterior_ids}`);
+        fotosExteriorIds = [];
+    }
+    Logger.log(`preparePostData: Usando fotos_exterior_ids existentes: ${fotosExteriorIds}`);
+    } else {
+    fotosExteriorIds = fotosExteriorArray.map(url => {
         Utilities.sleep(1000); // Pausa de 1 segundo
         return optimizeAndRenameImage(url, `${rowData.automarca} ${rowData.autosubmarcaversion} Exterior`, jwtToken);
-      }).filter(id => id !== null);
-      if (fotosExteriorIds.length > 0) {
+    }).filter(id => id !== null);
+    if (fotosExteriorIds.length > 0) {
         // Guardar los IDs en la hoja de cálculo
         sheet.getRange(rowIndex + 2, headerIndices['fotos_exterior_ids'] + 1).setValue(fotosExteriorIds.join(','));
-      }
     }
-  
+    }
+
     // Procesar fotos interior
     let fotosInteriorIds = [];
     if (rowData.fotos_interior_ids) {
-      // Si ya tenemos los IDs de las fotos interior, los usamos
-      fotosInteriorIds = rowData.fotos_interior_ids.split(',').map(id => id.trim());
-      Logger.log(`preparePostData: Usando fotos_interior_ids existentes: ${fotosInteriorIds}`);
+    if (typeof rowData.fotos_interior_ids === 'string') {
+        fotosInteriorIds = rowData.fotos_interior_ids.split(',').map(id => id.trim());
+    } else if (typeof rowData.fotos_interior_ids === 'number') {
+        fotosInteriorIds = [String(rowData.fotos_interior_ids)];
     } else {
-      fotosInteriorIds = fotosInteriorArray.map(url => {
+        Logger.log(`preparePostData: fotos_interior_ids tiene un tipo inesperado: ${typeof rowData.fotos_interior_ids}`);
+        fotosInteriorIds = [];
+    }
+    Logger.log(`preparePostData: Usando fotos_interior_ids existentes: ${fotosInteriorIds}`);
+    } else {
+    fotosInteriorIds = fotosInteriorArray.map(url => {
         Utilities.sleep(1000); // Pausa de 1 segundo
         return optimizeAndRenameImage(url, `${rowData.automarca} ${rowData.autosubmarcaversion} Interior`, jwtToken);
-      }).filter(id => id !== null);
-      if (fotosInteriorIds.length > 0) {
+    }).filter(id => id !== null);
+    if (fotosInteriorIds.length > 0) {
         // Guardar los IDs en la hoja de cálculo
         sheet.getRange(rowIndex + 2, headerIndices['fotos_interior_ids'] + 1).setValue(fotosInteriorIds.join(','));
-      }
     }
-  
+    }
     // Construir el título incluyendo AutoAno
     const title = `${rowData.automarca} ${rowData.autosubmarcaversion} ${rowData.autoano}`;
   

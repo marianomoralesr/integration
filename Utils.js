@@ -24,10 +24,16 @@
    * @param {Object} headerIndices - Mapeo de nombres de columnas a índices.
    * @return {Object} Objeto con los datos de la fila.
    */
-  function getRowData(row, headerIndices) {
+   function getRowData(row, headerIndices) {
     const rowData = {};
     for (const key in headerIndices) {
-      rowData[key] = row[headerIndices[key]];
+      const cellValue = row[headerIndices[key]];
+      // Convert cell value to string if it's a number
+      if (typeof cellValue === 'number') {
+        rowData[key] = cellValue.toString();
+      } else {
+        rowData[key] = cellValue;
+      }
     }
     return rowData;
   }
