@@ -10,7 +10,7 @@
  * @return {Blob|null} Blob de la imagen optimizada, o null si falla.
  */
  function optimizeImageWithTinyPNG(imageBlob, filename, title) {
-    const apiKey = 'TU_API_KEY_DE_TINYPNG'; // Reemplaza con tu clave de API de TinyPNG
+    const apiKey = '4k7M7ZdQwjtHDmFFKs3XHPNf0tYDNZQz'; // Reemplaza con tu clave de API de TinyPNG
     const url = 'https://api.tinify.com/shrink';
   
     try {
@@ -68,13 +68,12 @@
   }
   
   /**
-   * Optimiza y renombra una imagen descargada de una URL.
-   * @param {String} imageUrl - URL de la imagen.
-   * @param {String} title - Título para la imagen.
-   * @param {String} jwtToken - Token JWT para autenticación.
-   * @return {Number|null} ID de la imagen subida en WordPress, o null si falla.
-   */
-  function optimizeAndRenameImage(imageUrl, title, jwtToken) {
+ * Optimiza y renombra una imagen descargada de una URL.
+ * @param {String} imageUrl - URL de la imagen.
+ * @param {String} title - Título para la imagen.
+ * @return {Number|null} ID de la imagen subida en WordPress, o null si falla.
+ */
+function optimizeAndRenameImage(imageUrl, title) {
     try {
       // Descargar la imagen original
       const response = UrlFetchApp.fetch(imageUrl);
@@ -92,7 +91,7 @@
       }
   
       // Subir la imagen a WordPress y obtener el ID
-      const imageId = uploadImageAndGetId(imageBlob, title, jwtToken);
+      const imageId = uploadImageAndGetId(imageBlob, title);
   
       return imageId;
     } catch (error) {
@@ -102,26 +101,44 @@
   }
   
   /**
-   * Sube una imagen a WordPress y obtiene su ID.
-   * @param {Blob} imageBlob - Blob de la imagen.
-   * @param {String} title - Título para la imagen.
-   * @param {String} jwtToken - Token JWT para autenticación.
-   * @return {Number|null} ID de la imagen subida en WordPress, o null si falla.
-   */
-  function uploadImageAndGetId(imageBlob, title, jwtToken) {
+ * Sube una imagen a WordPress y obtiene su ID.
+ * @param {Blob} imageBlob - Blob de la imagen.
+ * @param {String} title - Título para la imagen.
+ * @return {Number|null} ID de la imagen subida en WordPress, o null si falla.
+ */
+function uploadImageAndGetId(imageBlob, title) {
     if (!imageBlob) {
       Logger.log('uploadImageAndGetId: No se proporcionó un blob de imagen válido.');
       return null;
     }
   
     try {
+      // Obtener el token JWT
+      let tokenInfo = scriptProperties.getProperty('JWT_TOKEN_INFO');
+      if (tokenInfo) {
+        tokenInfo = JSON.parse(tokenInfo);
+      } else {
+        tokenInfo = getJwtToken();
+        if (!tokenInfo) throw new Error('uploadImageAndGetId: No se pudo obtener el token JWT.');
+        scriptProperties.setProperty('JWT_TOKEN_INFO', JSON.stringify(tokenInfo));
+      }
+  
+      // Verificar si el token ha expirado
+      const now = new Date().getTime();
+      if (now >= tokenInfo.expiresAt) {
+        Logger.log('uploadImageAndGetId: El token JWT ha expirado. Obteniendo uno nuevo.');
+        tokenInfo = getJwtToken();
+        if (!tokenInfo) throw new Error('uploadImageAndGetId: No se pudo obtener el token JWT.');
+        scriptProperties.setProperty('JWT_TOKEN_INFO', JSON.stringify(tokenInfo));
+      }
+  
       Logger.log(`uploadImageAndGetId: Subiendo imagen con nombre: ${imageBlob.getName()}`);
   
       // Configura las opciones de la solicitud para subir la imagen
       const options = {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${jwtToken}`,
+          Authorization: `Bearer ${tokenInfo.token}`,
           'Content-Type': imageBlob.getContentType(),
           'Content-Disposition': `attachment; filename="${imageBlob.getName()}"`
         },
@@ -147,7 +164,7 @@
           const altOptions = {
             method: 'POST',
             headers: {
-              Authorization: `Bearer ${jwtToken}`,
+              Authorization: `Bearer ${tokenInfo.token}`,
               'Content-Type': 'application/json',
             },
             payload: JSON.stringify(altPayload),

@@ -30,13 +30,12 @@
    * @param {Number} modelId - ID del Modelo (model).
    * @param {Number} sucursalId - ID de la Sucursal.
    * @param {Number} clasificacionId - ID de la Clasificación.
-   * @param {String} jwtToken - Token JWT para autenticación.
    * @param {Sheet} sheet - Hoja de cálculo activa.
    * @param {Number} rowIndex - Índice de la fila actual.
    * @param {Object} headerIndices - Mapeo de nombres de columnas a índices.
    * @return {Object} Objeto con los datos del post preparados.
    */
-  function preparePostData(rowData, makeId, modelId, sucursalId, clasificacionId, jwtToken, sheet, rowIndex, headerIndices) {
+   function preparePostData(rowData, makeId, modelId, sucursalId, clasificacionId, sheet, rowIndex, headerIndices) {
     Logger.log(`preparePostData: Iniciando con automarca: '${rowData.automarca}', autosubmarcaversion: '${rowData.autosubmarcaversion}'`);
   
     // Procesa las URLs de las fotos exteriores e interiores como arrays de URLs
@@ -51,7 +50,7 @@
       Logger.log(`preparePostData: Usando featured_image_id existente: ${featuredImageId}`);
     } else if (rowData.fotooficial) {
       Utilities.sleep(1000); // Pausa de 1 segundo
-      featuredImageId = optimizeAndRenameImage(rowData.fotooficial, `${rowData.automarca} ${rowData.autosubmarcaversion} Oficial`, jwtToken);
+      featuredImageId = optimizeAndRenameImage(rowData.fotooficial, `${rowData.automarca} ${rowData.autosubmarcaversion} Oficial`);
       if (featuredImageId) {
         // Guardar el ID en la hoja de cálculo
         sheet.getRange(rowIndex + 2, headerIndices['featured_image_id'] + 1).setValue(featuredImageId);
@@ -73,7 +72,7 @@
     } else {
     fotosExteriorIds = fotosExteriorArray.map(url => {
         Utilities.sleep(1000); // Pausa de 1 segundo
-        return optimizeAndRenameImage(url, `${rowData.automarca} ${rowData.autosubmarcaversion} Exterior`, jwtToken);
+        return optimizeAndRenameImage(url, `${rowData.automarca} ${rowData.autosubmarcaversion} Exterior`);
     }).filter(id => id !== null);
     if (fotosExteriorIds.length > 0) {
         // Guardar los IDs en la hoja de cálculo
@@ -96,7 +95,7 @@
     } else {
     fotosInteriorIds = fotosInteriorArray.map(url => {
         Utilities.sleep(1000); // Pausa de 1 segundo
-        return optimizeAndRenameImage(url, `${rowData.automarca} ${rowData.autosubmarcaversion} Interior`, jwtToken);
+        return optimizeAndRenameImage(url, `${rowData.automarca} ${rowData.autosubmarcaversion} Interior`);
     }).filter(id => id !== null);
     if (fotosInteriorIds.length > 0) {
         // Guardar los IDs en la hoja de cálculo
@@ -155,18 +154,17 @@
    * Solo actualiza los campos que han cambiado.
    * @param {Object} rowData - Datos de la fila.
    * @param {Number} postId - ID del post existente en WordPress (si aplica).
-   * @param {String} jwtToken - Token JWT para autenticación.
    * @param {Sheet} sheet - Hoja de cálculo activa.
    * @param {Number} rowIndex - Índice de la fila actual.
    * @param {Object} headerIndices - Mapeo de nombres de columnas a índices.
    */
-  function processRow(rowData, postId, jwtToken, sheet, rowIndex, headerIndices) {
+  function processRow(rowData, postId, sheet, rowIndex, headerIndices) {
     try {
       // Obtener IDs de make, model, sucursal, clasificacionid
-      const makeId = getTermId('makes', rowData.automarca, jwtToken);
-      const modelId = getTermId('models', rowData.autosubmarcaversion, jwtToken);
-      const sucursalId = getTermId('sucursal', rowData.sucursal, jwtToken);
-      const clasificacionId = getTermId('clasificacionid', rowData.clasificacionid, jwtToken);
+      const makeId = getTermId('makes', rowData.automarca);
+      const modelId = getTermId('models', rowData.autosubmarcaversion);
+      const sucursalId = getTermId('sucursal', rowData.sucursal);
+      const clasificacionId = getTermId('clasificacionid', rowData.clasificacionid);
   
       // Verificar que tenemos IDs válidos
       if (!makeId || !modelId) {
@@ -174,7 +172,7 @@
       }
   
       // Prepara los datos del post
-      const postData = preparePostData(rowData, makeId, modelId, sucursalId, clasificacionId, jwtToken, sheet, rowIndex, headerIndices);
+      const postData = preparePostData(rowData, makeId, modelId, sucursalId, clasificacionId, sheet, rowIndex, headerIndices);
   
       // Determina el estado del post basado en 'ordenstatus'
       if (rowData['ordenstatus'] === 'Historico' && postId) {
@@ -191,7 +189,7 @@
       let response;
       if (postId) {
         // Obtener datos existentes del post
-        const existingData = getExistingPostData(postId, jwtToken);
+        const existingData = getExistingPostData(postId);
         if (!existingData) {
           throw new Error(`No se pudieron obtener los datos existentes del post ID ${postId}`);
         }
@@ -209,18 +207,18 @@
         // Actualizar solo los campos modificados
         Logger.log(`processRow: Actualizando post existente con ID ${postId}`);
         const updateUrl = `${WP_CUSTOM_AUTOS_ENDPOINT}/${postId}`;
-        response = wpApiRequest('POST', updateUrl, updatedFields, jwtToken);
+        response = wpApiRequest('POST', updateUrl, updatedFields);
         Logger.log(`processRow: Post actualizado con ID ${postId}`);
       } else {
         // Crea un nuevo post
         Logger.log(`processRow: Creando un nuevo post`);
-        response = wpApiRequest('POST', WP_CUSTOM_AUTOS_ENDPOINT, postData, jwtToken);
+        response = wpApiRequest('POST', WP_CUSTOM_AUTOS_ENDPOINT, postData);
         postId = response.id;
         Logger.log(`processRow: Nuevo post creado con ID ${postId}`);
       }
   
       // Gestiona las relaciones después de crear o actualizar el post
-      manageRelations(postId, makeId, modelId, sucursalId, jwtToken);
+      manageRelations(postId, makeId, modelId, sucursalId);
   
       // Mensaje de estatus basado en la acción realizada
       const estatusMessage = postData['status'] === 'trash' ? 'Actualizado a Historico.' : 'Éxito: Auto publicado/actualizado.';

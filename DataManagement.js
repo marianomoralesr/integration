@@ -5,14 +5,13 @@
 /**
  * Busca una publicación existente en WordPress por el campo 'ordencompra' usando el endpoint personalizado.
  * @param {String} ordencompra - Valor de 'ordencompra' para buscar.
- * @param {String} jwtToken - Token JWT para autenticación.
  * @return {Number|null} ID de la publicación si existe, de lo contrario null.
  */
- function findPostByOrdenCompra(ordencompra, jwtToken) {
+ function findPostByOrdenCompra(ordencompra) {
     const searchUrl = `${WP_CUSTOM_AUTOS_ENDPOINT}?ordencompra=${encodeURIComponent(ordencompra)}`;
   
     try {
-      const posts = wpApiRequest('GET', searchUrl, null, jwtToken);
+      const posts = wpApiRequest('GET', searchUrl, null);
       if (Array.isArray(posts) && posts.length > 0) {
         Logger.log(`findPostByOrdenCompra: Publicación encontrada con ordencompra '${ordencompra}': ID ${posts[0].id}`);
         return posts[0].id;
@@ -30,11 +29,10 @@
    * Crea o obtiene el ID de un término en una taxonomía.
    * @param {String} termName - Nombre del término.
    * @param {String} taxonomy - Nombre de la taxonomía.
-   * @param {String} jwtToken - Token JWT para autenticación.
    * @param {Number|null} parent - ID del término padre (si aplica).
    * @return {Number|null} ID del término si se encuentra o crea exitosamente, de lo contrario null.
    */
-  function createTermAndGetId(termName, taxonomy, jwtToken, parent = null) {
+  function createTermAndGetId(termName, taxonomy, parent = null) {
     if (typeof termName !== 'string' || termName.trim() === '') {
       Logger.log(`createTermAndGetId: termName no es una cadena válida o está vacío: ${termName}`);
       return null;
@@ -47,7 +45,7 @@
     try {
       Logger.log(`createTermAndGetId: Buscando término '${termName}' en taxonomía '${taxonomy}' con slug '${slug}'`);
       // Busca si el término ya existe por slug
-      const terms = wpApiRequest('GET', searchUrl, null, jwtToken);
+      const terms = wpApiRequest('GET', searchUrl, null);
   
       if (Array.isArray(terms) && terms.length > 0) {
         Logger.log(`createTermAndGetId: Término encontrado: ${terms[0].name} con ID ${terms[0].id}`);
@@ -61,8 +59,7 @@
         Logger.log(`createTermAndGetId: Asignando parent_id: ${parent} al término '${termName}'`);
       }
       Logger.log(`createTermAndGetId: Creando término '${termName}' en taxonomía '${taxonomy}'`);
-      const createdTerm = wpApiRequest('POST', `${WP_TAXONOMIES_BASE}/${taxonomy}`, createPayload, jwtToken);
-  
+      const createdTerm = wpApiRequest('POST', `${WP_TAXONOMIES_BASE}/${taxonomy}`, createPayload);
       if (createdTerm && createdTerm.id) {
         Logger.log(`createTermAndGetId: Término creado: ${createdTerm.name} con ID ${createdTerm.id}`);
         return createdTerm.id;
@@ -80,12 +77,11 @@
    * Obtiene el ID de un término existente en una taxonomía basándose en su nombre.
    * @param {String} taxonomy - Nombre de la taxonomía.
    * @param {String} termName - Nombre del término.
-   * @param {String} jwtToken - Token JWT para autenticación.
    * @return {Number|null} ID del término si existe, de lo contrario null.
    */
-  function getTermId(taxonomy, termName, jwtToken) {
+  function getTermId(taxonomy, termName) {
     Logger.log(`getTermId: Buscando término '${termName}' en la taxonomía '${taxonomy}'`);
-    const termId = createTermAndGetId(termName, taxonomy, jwtToken);
+    const termId = createTermAndGetId(termName, taxonomy);
     if (termId) {
       Logger.log(`getTermId: Término obtenido con ID ${termId}`);
       return termId;
